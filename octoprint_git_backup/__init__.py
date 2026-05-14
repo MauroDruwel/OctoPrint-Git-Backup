@@ -39,7 +39,7 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
 
     def get_template_configs(self):
         return [
-            dict(type="settings", custom_bindings=True)
+            dict(type="settings", custom_bindings=False)
         ]
 
     ##~~ AssetPlugin mixin
