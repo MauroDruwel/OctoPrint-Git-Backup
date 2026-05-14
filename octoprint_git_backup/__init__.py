@@ -239,9 +239,11 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
 
         env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
 
-        def run(cmd, timeout=60):
+        def run(cmd, timeout=60, input=None):
             r = subprocess.run(
-                self._sudo(cmd), capture_output=True, text=True, timeout=timeout, env=env
+                self._sudo(cmd),
+                capture_output=True, text=True, timeout=timeout,
+                env=env, input=input
             )
             if r.returncode != 0:
                 raise RuntimeError(r.stderr.strip() or r.stdout.strip())
@@ -254,28 +256,44 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
                 capture_output=True, text=True, timeout=5
             ).stdout.strip()
 
-            # 2. Ensure keyring directory exists
-            run(["mkdir", "-p", "-m", "755", "/etc/apt/keyrings"])
-
-            # 3. Download GPG keyring
             keyring_path = "/etc/apt/keyrings/githubcli-archive-keyring.gpg"
-            keyring_url = "https://cli.github.com/packages/githubcli-archive-keyring.gpg"
-            keyring_data = urllib.request.urlopen(keyring_url, timeout=30).read()
-            with open(keyring_path, "wb") as f:
-                f.write(keyring_data)
-            run(["chmod", "go+r", keyring_path])
+            sources_path = "/etc/apt/sources.list.d/github-cli.list"
+            repo_already_present = os.path.isfile(sources_path)
 
-            # 4. Add apt source
-            run(["mkdir", "-p", "-m", "755", "/etc/apt/sources.list.d"])
-            source_line = (
-                "deb [arch={arch} signed-by={keyring}] "
-                "https://cli.github.com/packages stable main\n"
-            ).format(arch=arch, keyring=keyring_path)
-            with open("/etc/apt/sources.list.d/github-cli.list", "w") as f:
-                f.write(source_line)
+            if not repo_already_present:
+                # 2. Ensure keyring directory exists
+                run(["mkdir", "-p", "-m", "755", "/etc/apt/keyrings"])
 
-            # 5. apt-get update + install
-            run(["apt-get", "update", "-q"], timeout=120)
+                # 3. Download GPG keyring, write via sudo tee (works root or not)
+                keyring_url = "https://cli.github.com/packages/githubcli-archive-keyring.gpg"
+                keyring_data = urllib.request.urlopen(keyring_url, timeout=30).read()
+
+                # Write to temp file first, then sudo-copy to final path
+                tmp_keyring = tempfile.NamedTemporaryFile(delete=False, suffix=".gpg")
+                try:
+                    tmp_keyring.write(keyring_data)
+                    tmp_keyring.flush()
+                    tmp_keyring.close()
+                    run(["cp", tmp_keyring.name, keyring_path])
+                    run(["chmod", "go+r", keyring_path])
+                finally:
+                    try:
+                        os.unlink(tmp_keyring.name)
+                    except Exception:
+                        pass
+
+                # 4. Add apt source via sudo tee
+                run(["mkdir", "-p", "-m", "755", "/etc/apt/sources.list.d"])
+                source_line = (
+                    "deb [arch={arch} signed-by={keyring}] "
+                    "https://cli.github.com/packages stable main\n"
+                ).format(arch=arch, keyring=keyring_path)
+                run(["tee", sources_path], input=source_line)
+
+                # 5. Update package index after adding new repo
+                run(["apt-get", "update", "-q"], timeout=120)
+
+            # 6. Install (or upgrade) gh
             run(["apt-get", "install", "-y", "gh"], timeout=180)
 
             return flask.jsonify({"success": True})
