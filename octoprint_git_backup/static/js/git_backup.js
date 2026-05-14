@@ -2,7 +2,7 @@
  * View model for OctoPrint-Git-Backup
  *
  * Author: Mauro Druwel
- * License: AGPL-3.0-or-later
+ * License: MIT
  */
 $(function() {
     OctoPrint.plugins = OctoPrint.plugins || {};
@@ -142,31 +142,52 @@ $(function() {
     // ── Install git / gh CLI ──────────────────────────────────────────────────
 
     OctoPrint.plugins.git_backup.installPackage = function(pkg) {
-        var label = pkg === "git" ? "git" : "GitHub CLI";
-        var $container = $("#git_backup_auth_status");
-        var $btn = $("#git_backup_auth_refresh");
+        var isGit  = pkg === "git";
+        var label  = isGit ? "git" : "GitHub CLI (gh)";
+        var cmdLine = isGit
+            ? "apt-get install -y git"
+            : "apt-get install -y gh  (or full GitHub CLI repo setup if gh is not in your default apt sources)";
 
-        $container.html(icon("spin") + " Installing " + label + "\u2026 (this may take a minute)");
-        $btn.prop("disabled", true);
+        bootbox.confirm({
+            title: "Install " + label + "?",
+            message:
+                "<p>This will run the following command on your OctoPrint host:</p>" +
+                "<pre style='margin:8px 0'>" + cmdLine + "</pre>" +
+                "<p class='muted' style='margin-bottom:0'>Requires apt (Debian / Ubuntu / Raspberry Pi OS). " +
+                "If you are not on an apt-based system, install " + label + " manually instead.</p>",
+            buttons: {
+                cancel:  { label: "Cancel",  className: "btn" },
+                confirm: { label: "Install", className: "btn btn-primary" }
+            },
+            callback: function(confirmed) {
+                if (!confirmed) return;
 
-        OctoPrint.simpleApiCommand("git_backup", pkg === "git" ? "install_git" : "install_gh", {})
-            .done(function(data) {
-                if (data.success) {
-                    $container.html(icon("check") + " " + label + " installed! Refreshing\u2026");
-                    setTimeout(OctoPrint.plugins.git_backup.checkAuthStatus, 1200);
-                } else {
-                    $container.html(
-                        icon("times") + " Installation failed. Try manually:<br>" +
-                        "<code>apt-get install -y " + _.escape(pkg) + "</code>" +
-                        (data.stderr ? "<br><small class='muted'>" + _.escape(data.stderr) + "</small>" : "")
-                    );
-                    $btn.prop("disabled", false);
-                }
-            })
-            .fail(function() {
-                $container.html(icon("times") + " Request failed.");
-                $btn.prop("disabled", false);
-            });
+                var $container = $("#git_backup_auth_status");
+                var $btn = $("#git_backup_auth_refresh");
+
+                $container.html(icon("spin") + " Installing " + label + "\u2026 (this may take a minute)");
+                $btn.prop("disabled", true);
+
+                OctoPrint.simpleApiCommand("git_backup", isGit ? "install_git" : "install_gh", {})
+                    .done(function(data) {
+                        if (data.success) {
+                            $container.html(icon("check") + " " + label + " installed! Refreshing\u2026");
+                            setTimeout(OctoPrint.plugins.git_backup.checkAuthStatus, 1200);
+                        } else {
+                            $container.html(
+                                icon("times") + " Installation failed. Try manually:<br>" +
+                                "<code>apt-get install -y " + _.escape(pkg) + "</code>" +
+                                (data.stderr ? "<br><small class='muted'>" + _.escape(data.stderr) + "</small>" : "")
+                            );
+                            $btn.prop("disabled", false);
+                        }
+                    })
+                    .fail(function() {
+                        $container.html(icon("times") + " Request failed.");
+                        $btn.prop("disabled", false);
+                    });
+            }
+        });
     };
 
     // ── gh auth login (device flow) ───────────────────────────────────────────
