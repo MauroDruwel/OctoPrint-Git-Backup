@@ -50,4 +50,64 @@
             </p>
         </div>
     </div>
+    <div class="control-group">
+        <label class="control-label">{{ _('Auth Status') }}</label>
+        <div class="controls">
+            <!-- Loading spinner -->
+            <p class="help-block" data-bind="visible: authLoading()" style="margin-bottom: 4px;">
+                <i class="fas fa-spinner fa-spin"></i> {{ _('Checking…') }}
+            </p>
+
+            <!-- Results -->
+            <!-- ko if: !authLoading() && authStatus() !== null -->
+            <p class="help-block" style="margin-bottom: 4px;">
+                <!-- ko if: authStatus().git_installed -->
+                <i class="fas fa-check" style="color: #468847;"></i>
+                <span data-bind="text: authStatus().git_version"></span>
+                <!-- /ko -->
+                <!-- ko ifnot: authStatus().git_installed -->
+                <i class="fas fa-times" style="color: #b94a48;"></i>
+                <strong>{{ _('git not found') }}</strong> — {{ _('install git on your OctoPrint host.') }}
+                <!-- /ko -->
+            </p>
+
+            <p class="help-block" style="margin-bottom: 4px;">
+                <!-- gh auth: authenticated -->
+                <!-- ko if: authStatus().gh_auth === true -->
+                <i class="fas fa-check" style="color: #468847;"></i>
+                {{ _('GitHub CLI authenticated') }}
+                <!-- ko if: authStatus().gh_username -->
+                {{ _('as') }} <strong data-bind="text: '@' + authStatus().gh_username"></strong>
+                <!-- /ko -->
+                <!-- /ko -->
+                <!-- gh auth: not authenticated but gh installed -->
+                <!-- ko if: authStatus().gh_auth === false -->
+                <i class="fas fa-times" style="color: #b94a48;"></i>
+                {{ _('GitHub CLI not authenticated — run') }} <code>gh auth login</code>
+                <!-- /ko -->
+                <!-- gh: not installed -->
+                <!-- ko if: authStatus().gh_auth === null -->
+                <i class="fas fa-minus" style="color: #999;"></i>
+                {{ _('GitHub CLI not installed') }}
+                <!-- ko if: pluginSettings.repo_url().indexOf('git@') !== 0 -->
+                — <a href="https://cli.github.com" target="_blank" rel="noopener noreferrer">{{ _('install gh') }}</a>
+                {{ _('for HTTPS auth, or use an SSH URL.') }}
+                <!-- /ko -->
+                <!-- ko if: pluginSettings.repo_url().indexOf('git@') === 0 -->
+                <span class="muted">{{ _('(not required for SSH URLs)') }}</span>
+                <!-- /ko -->
+                <!-- /ko -->
+            </p>
+            <!-- /ko -->
+
+            <!-- Not yet checked -->
+            <!-- ko if: !authLoading() && authStatus() === null -->
+            <p class="help-block" style="margin-bottom: 4px; color: #999;">{{ _('Not checked yet.') }}</p>
+            <!-- /ko -->
+
+            <button class="btn btn-small" data-bind="click: checkAuthStatus, disable: authLoading()">
+                <i class="fas fa-sync-alt"></i> {{ _('Refresh') }}
+            </button>
+        </div>
+    </div>
 </form>

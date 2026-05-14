@@ -9,13 +9,16 @@ import threading
 import zipfile
 from datetime import datetime, timezone
 
+import flask
+
 import octoprint.plugin
 
 
 class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
                        octoprint.plugin.AssetPlugin,
                        octoprint.plugin.TemplatePlugin,
-                       octoprint.plugin.EventHandlerPlugin):
+                       octoprint.plugin.EventHandlerPlugin,
+                       octoprint.plugin.SimpleApiPlugin):
 
     def initialize(self):
         self._git_lock = threading.Lock()
@@ -182,6 +185,81 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
             if tmp_dir:
                 shutil.rmtree(tmp_dir, ignore_errors=True)
                 self._logger.debug("Git Backup: Cleaned up temp dir %s", tmp_dir)
+
+    ##~~ SimpleApiPlugin mixin
+
+    def is_api_protected(self):
+        return True
+
+    def is_api_adminonly(self):
+        return True
+
+    def get_api_commands(self):
+        return {}
+
+    def on_api_get(self, request):
+        # Suppress color codes and interactive prompts so output is clean.
+        env = {
+            **os.environ,
+            "GIT_TERMINAL_PROMPT": "0",
+            "GH_PROMPT_DISABLED": "1",
+            "NO_COLOR": "1",
+            "CLICOLOR": "0",
+            "TERM": "dumb",
+        }
+        result = {}
+
+        # git
+        try:
+            r = subprocess.run(
+                ["git", "--version"],
+                capture_output=True, text=True, timeout=5, env=env
+            )
+            result["git_installed"] = r.returncode == 0
+            result["git_version"] = r.stdout.strip() if r.returncode == 0 else None
+        except Exception:
+            result["git_installed"] = False
+            result["git_version"] = None
+
+        # gh CLI presence
+        try:
+            r = subprocess.run(
+                ["gh", "--version"],
+                capture_output=True, text=True, timeout=5, env=env
+            )
+            result["gh_installed"] = r.returncode == 0
+        except Exception:
+            result["gh_installed"] = False
+
+        # gh auth — only if gh is present
+        if result["gh_installed"]:
+            try:
+                r = subprocess.run(
+                    ["gh", "auth", "status"],
+                    capture_output=True, text=True, timeout=10, env=env
+                )
+                if r.returncode == 0:
+                    result["gh_auth"] = True
+                    # Fetch the authenticated username via the API (most reliable).
+                    try:
+                        r2 = subprocess.run(
+                            ["gh", "api", "user", "--jq", ".login"],
+                            capture_output=True, text=True, timeout=10, env=env
+                        )
+                        result["gh_username"] = r2.stdout.strip() if r2.returncode == 0 else None
+                    except Exception:
+                        result["gh_username"] = None
+                else:
+                    result["gh_auth"] = False
+                    result["gh_username"] = None
+            except subprocess.TimeoutExpired:
+                result["gh_auth"] = False
+                result["gh_username"] = None
+        else:
+            result["gh_auth"] = None  # None = not applicable (gh not installed)
+            result["gh_username"] = None
+
+        return flask.jsonify(result)
 
     ##~~ Softwareupdate hook
 
