@@ -2,10 +2,13 @@
 from __future__ import absolute_import
 
 import os
+import re
+import select
 import shutil
 import subprocess
 import tempfile
 import threading
+import time
 import zipfile
 from datetime import datetime, timezone
 
@@ -22,6 +25,7 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
 
     def initialize(self):
         self._git_lock = threading.Lock()
+        self._auth_proc = None
 
     ##~~ SettingsPlugin mixin
 
@@ -195,7 +199,88 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
         return True
 
     def get_api_commands(self):
-        return {}
+        return {
+            "install_git": [],
+            "install_gh": [],
+            "start_auth_login": [],
+        }
+
+    def on_api_command(self, command, data):
+        if command == "install_git":
+            return self._api_apt_install("git")
+        elif command == "install_gh":
+            return self._api_apt_install("gh")
+        elif command == "start_auth_login":
+            return self._api_start_auth_login()
+
+    def _api_apt_install(self, package):
+        env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
+        try:
+            r = subprocess.run(
+                ["sudo", "apt-get", "install", "-y", package],
+                capture_output=True, text=True, timeout=180, env=env
+            )
+            if r.returncode == 0:
+                return flask.jsonify({"success": True})
+            self._logger.warning("apt-get install %s failed:\n%s", package, r.stderr)
+            return flask.jsonify({"success": False, "stderr": r.stderr[:400]})
+        except subprocess.TimeoutExpired:
+            return flask.jsonify({"success": False, "stderr": "Installation timed out."})
+        except Exception as e:
+            return flask.jsonify({"success": False, "stderr": str(e)})
+
+    def _api_start_auth_login(self):
+        # Kill any lingering previous auth process.
+        if self._auth_proc and self._auth_proc.poll() is None:
+            self._auth_proc.terminate()
+            self._auth_proc = None
+
+        env = {
+            **os.environ,
+            "NO_COLOR": "1", "CLICOLOR": "0", "TERM": "dumb",
+            "GIT_TERMINAL_PROMPT": "0",
+        }
+        try:
+            proc = subprocess.Popen(
+                ["gh", "auth", "login", "-h", "github.com", "-p", "https", "--web"],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True, bufsize=1,
+                env=env,
+            )
+        except FileNotFoundError:
+            return flask.jsonify({"success": False, "error": "gh_not_found"})
+
+        # Read output line by line until we find the XXXX-XXXX device code.
+        code = None
+        deadline = time.time() + 15
+        while time.time() < deadline:
+            ready, _, _ = select.select([proc.stdout], [], [], 0.3)
+            if ready:
+                line = proc.stdout.readline()
+                if not line:
+                    break
+                m = re.search(r'([A-Z0-9]{4}-[A-Z0-9]{4})', line)
+                if m:
+                    code = m.group(1)
+                    break
+            if proc.poll() is not None:
+                break
+
+        if code:
+            self._auth_proc = proc
+            return flask.jsonify({
+                "success": True,
+                "code": code,
+                "url": "https://github.com/login/device",
+            })
+
+        try:
+            proc.terminate()
+        except Exception:
+            pass
+        return flask.jsonify({"success": False, "error": "no_code"})
 
     def on_api_get(self, request):
         # Suppress color codes and interactive prompts so output is clean.
