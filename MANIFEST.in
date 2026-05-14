@@ -1,0 +1,4 @@
+include README.md
+recursive-include octoprint_git_backup/templates *
+recursive-include octoprint_git_backup/translations *
+recursive-include octoprint_git_backup/static *

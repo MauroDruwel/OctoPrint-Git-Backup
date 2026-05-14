@@ -1,0 +1,45 @@
+<form class="form-horizontal">
+    <div class="alert alert-warning">
+        <strong>{{ _('Use a private repository!') }}</strong>
+        {{ _('OctoPrint backups may contain sensitive data (API keys, plugin settings, credentials). Only push to a repository that is set to private on GitHub.') }}
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('GitHub Repository URL') }}</label>
+        <div class="controls">
+            <input type="text"
+                   class="input-block-level"
+                   data-bind="value: pluginSettings.repo_url"
+                   placeholder="https://github.com/user/repo.git">
+            <span class="help-block">
+                {{ _('HTTPS or SSH URL of the repository to push backups to.') }}
+            </span>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: pluginSettings.delete_backup_after_push">
+                {{ _('Delete local backup after a successful push') }}
+            </label>
+            <span class="help-block">
+                {{ _('If enabled, the .zip backup is removed from OctoPrint once it has been pushed to the repository.') }}
+            </span>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <div class="controls">
+            <span class="help-block">
+                <i class="fas fa-info-circle"></i>
+                {{ _('Git authentication is handled by your system — no credentials are stored in the plugin.') }}
+                {{ _('Authenticate once with') }} <code>gh auth login</code>
+                {{ _('(GitHub CLI) or configure an SSH key, then git commands will work automatically.') }}
+                <a href="https://cli.github.com/manual/gh_auth_login" target="_blank" rel="noopener noreferrer">{{ _('GitHub CLI docs') }}</a>
+                &nbsp;&bull;&nbsp;
+                <a href="https://docs.github.com/en/authentication/connecting-to-github-with-ssh" target="_blank" rel="noopener noreferrer">{{ _('SSH key docs') }}</a>
+            </span>
+        </div>
+    </div>
+</form>
