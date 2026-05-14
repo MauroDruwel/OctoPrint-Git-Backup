@@ -139,28 +139,36 @@ $(function() {
             .always(function() { $btn.prop("disabled", false); });
     };
 
-    // ── Simple confirm dialog (Bootstrap modal, no bootbox needed) ────────────
+    // ── PNotify confirm dialog ────────────────────────────────────────────────
 
     function confirmDialog(title, bodyHtml, confirmLabel, onConfirm) {
-        var id = "git_backup_confirm_modal";
-        $("#" + id).remove();
-        var html =
-            "<div id='" + id + "' class='modal hide fade' tabindex='-1'>" +
-              "<div class='modal-header'><h3>" + title + "</h3></div>" +
-              "<div class='modal-body'>" + bodyHtml + "</div>" +
-              "<div class='modal-footer'>" +
-                "<button class='btn' data-dismiss='modal'>Cancel</button>" +
-                "<button class='btn btn-primary' id='" + id + "_ok'>" + confirmLabel + "</button>" +
-              "</div>" +
-            "</div>";
-        $("body").append(html);
-        var $modal = $("#" + id);
-        $modal.on("hidden", function() { $modal.remove(); });
-        $("#" + id + "_ok").on("click", function() {
-            $modal.modal("hide");
-            onConfirm();
+        new PNotify({
+            title: title,
+            text: bodyHtml,
+            icon: "fas fa-question-circle",
+            hide: false,
+            confirm: {
+                confirm: true,
+                buttons: [
+                    {
+                        text: confirmLabel,
+                        addClass: "btn-primary",
+                        click: function(notice) {
+                            notice.remove();
+                            onConfirm();
+                        }
+                    },
+                    {
+                        text: "Cancel",
+                        click: function(notice) {
+                            notice.remove();
+                        }
+                    }
+                ]
+            },
+            buttons: { closer: false, sticker: false },
+            history: { history: false }
         });
-        $modal.modal("show");
     }
 
     // ── Install git / gh CLI ──────────────────────────────────────────────────
