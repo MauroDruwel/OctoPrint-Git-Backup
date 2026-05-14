@@ -215,9 +215,12 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
 
     def _api_apt_install(self, package):
         env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
+        cmd = ["apt-get", "install", "-y", package]
+        if os.getuid() != 0:
+            cmd = ["sudo"] + cmd
         try:
             r = subprocess.run(
-                ["sudo", "apt-get", "install", "-y", package],
+                cmd,
                 capture_output=True, text=True, timeout=180, env=env
             )
             if r.returncode == 0:

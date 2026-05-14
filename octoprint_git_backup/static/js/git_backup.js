@@ -93,7 +93,7 @@ $(function() {
                 } else {
                     $container.html(
                         icon("times") + " Installation failed. Try manually:<br>" +
-                        "<code>sudo apt-get install -y " + _.escape(pkg) + "</code>" +
+                        "<code>apt-get install -y " + _.escape(pkg) + "</code>" +
                         (data.stderr ? "<br><small class='muted'>" + _.escape(data.stderr) + "</small>" : "")
                     );
                     $btn.prop("disabled", false);
