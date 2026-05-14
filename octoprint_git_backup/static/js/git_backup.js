@@ -66,7 +66,6 @@ $(function() {
 
     OctoPrint.plugins.git_backup.checkRepo = function(url) {
         var $span = $("#git_backup_repo_check");
-        var $alert = $("#git_backup_repo_alert");
         if (!url || !url.trim()) { $span.html(""); return; }
 
         $span.html("<i class='fas fa-spinner fa-spin'></i> Checking\u2026");
@@ -75,23 +74,15 @@ $(function() {
             .done(function(data) {
                 if (data.nwo === null) {
                     $span.html("<span class='muted'>Enter a valid GitHub URL to check visibility.</span>");
-                    $alert.removeClass("alert-success alert-error").addClass("alert-warning")
-                        .html("<strong>Use a private repository!</strong> OctoPrint backups may contain sensitive data (API keys, plugin settings, credentials). Only push to a repository that is set to private on GitHub.");
                 } else if (data.is_private === true) {
-                    $span.html(icon("check") + " <strong>" + _.escape(data.nwo) + "</strong> is private");
-                    $alert.removeClass("alert-warning alert-error").addClass("alert-success")
-                        .html(icon("check") + " <strong>" + _.escape(data.nwo) + "</strong> is private — your backups are safe.");
+                    $span.html("<span style='color:#468847'>" + icon("check") + " <strong>" + _.escape(data.nwo) + "</strong> is private</span>");
                 } else if (data.is_private === false) {
                     $span.html(
                         "<span style='color:#b94a48'>" + icon("times") +
                         " <strong>" + _.escape(data.nwo) + "</strong> is <strong>public</strong> — backups may contain sensitive data!</span>"
                     );
-                    $alert.removeClass("alert-warning alert-success").addClass("alert-error")
-                        .html(icon("times") + " <strong>" + _.escape(data.nwo) + "</strong> is <strong>public!</strong> OctoPrint backups may contain sensitive data. Please make this repository private on GitHub.");
                 } else {
                     $span.html("<span class='muted'>Could not verify visibility (repo not found or no access).</span>");
-                    $alert.removeClass("alert-success alert-error").addClass("alert-warning")
-                        .html("<strong>Use a private repository!</strong> OctoPrint backups may contain sensitive data (API keys, plugin settings, credentials). Only push to a repository that is set to private on GitHub.");
                 }
             })
             .fail(function() { $span.html(""); });
