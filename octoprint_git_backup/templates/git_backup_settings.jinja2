@@ -5,14 +5,14 @@
     </div>
 
     <div class="control-group">
-        <label class="control-label">{{ _('GitHub Repository URL') }}</label>
+        <label class="control-label">{{ _('Repository URL') }}</label>
         <div class="controls">
             <input type="text"
                    class="input-block-level"
                    data-bind="value: pluginSettings.repo_url"
-                   placeholder="https://github.com/user/repo.git">
+                   placeholder="https://github.com/user/octoprint-backup.git">
             <span class="help-block">
-                {{ _('HTTPS or SSH URL of the repository to push backups to.') }}
+                {{ _('HTTPS URL of your GitHub repository (recommended), or an SSH URL if you prefer key-based auth.') }}
             </span>
         </div>
     </div>
@@ -30,16 +30,24 @@
     </div>
 
     <div class="control-group">
+        <label class="control-label">{{ _('Authentication') }}</label>
         <div class="controls">
-            <span class="help-block">
+            <p class="help-block" style="margin-bottom: 6px;">
                 <i class="fas fa-info-circle"></i>
-                {{ _('Git authentication is handled by your system — no credentials are stored in the plugin.') }}
-                {{ _('Authenticate once with') }} <code>gh auth login</code>
-                {{ _('(GitHub CLI) or configure an SSH key, then git commands will work automatically.') }}
-                <a href="https://cli.github.com/manual/gh_auth_login" target="_blank" rel="noopener noreferrer">{{ _('GitHub CLI docs') }}</a>
-                &nbsp;&bull;&nbsp;
-                <a href="https://docs.github.com/en/authentication/connecting-to-github-with-ssh" target="_blank" rel="noopener noreferrer">{{ _('SSH key docs') }}</a>
-            </span>
+                {{ _('No credentials are stored in the plugin — authentication is handled once at the OS level.') }}
+            </p>
+            <p class="help-block" style="margin-bottom: 4px;">
+                <strong>{{ _('Recommended:') }}</strong>
+                {{ _('Use an HTTPS URL and authenticate with the') }}
+                <a href="https://cli.github.com" target="_blank" rel="noopener noreferrer">{{ _('GitHub CLI') }}</a>.
+                {{ _('Run') }} <code>gh auth login</code> {{ _('once on your OctoPrint host and git will use it automatically.') }}
+            </p>
+            <p class="help-block" style="margin-bottom: 0;">
+                <strong>{{ _('Alternative:') }}</strong>
+                {{ _('Use an SSH URL') }} (<code>git@github.com:user/repo.git</code>) {{ _('and') }}
+                <a href="https://docs.github.com/en/authentication/connecting-to-github-with-ssh" target="_blank" rel="noopener noreferrer">{{ _('configure an SSH key') }}</a>
+                {{ _('on your host.') }}
+            </p>
         </div>
     </div>
 </form>
