@@ -13,42 +13,43 @@ $(function() {
     // ── Status HTML builder ───────────────────────────────────────────────────
 
     function buildStatusHtml(data) {
-        var lines = [];
+        var lines = [];  // each entry: {html, sub}
+
+        function push(html)    { lines.push({html: html, sub: false}); }
+        function pushSub(html) { lines.push({html: html, sub: true}); }
 
         // git
         if (data.git_installed) {
-            lines.push(icon("check") + " " + _.escape(data.git_version || "git installed"));
+            push(icon("check") + " " + _.escape(data.git_version || "git installed"));
         } else {
-            lines.push(
+            push(
                 icon("times") + " <strong>git not found</strong> — " +
                 actionLink("install_git_btn", "install git", "OctoPrint.plugins.git_backup.installPackage('git')")
             );
         }
 
         // gh auth
-        // gh auth line
         if (data.gh_auth === true) {
             var line = icon("check") + " GitHub CLI authenticated";
             if (data.gh_username) line += " as <strong>@" + _.escape(data.gh_username) + "</strong>";
-            lines.push(line);
+            push(line);
 
             // git credential helper sub-check (only relevant when gh is authed)
             if (data.git_credential_helper_set === true) {
-                lines.push("&nbsp;&nbsp;" + icon("check") + " git configured to use gh credentials");
+                pushSub(icon("check") + " git configured to use gh credentials");
             } else if (data.git_credential_helper_set === false) {
-                lines.push(
-                    "&nbsp;&nbsp;" + icon("times") + " git not configured to use gh credentials — " +
+                pushSub(
+                    icon("times") + " git not configured to use gh credentials — " +
                     actionLink("setup_git_btn", "run gh auth setup-git", "OctoPrint.plugins.git_backup.setupGit()")
                 );
             }
         } else if (data.gh_auth === false) {
-            lines.push(
+            push(
                 icon("times") + " GitHub CLI not authenticated — " +
                 actionLink("gh_login_btn", "run gh auth login", "OctoPrint.plugins.git_backup.startAuthLogin()")
             );
         } else {
-            // gh not installed
-            lines.push(
+            push(
                 icon("minus") + " GitHub CLI not installed — " +
                 actionLink("install_gh_btn", "install gh CLI", "OctoPrint.plugins.git_backup.installPackage('gh')") +
                 " or see <a href='https://cli.github.com' target='_blank' rel='noopener noreferrer'>manual instructions</a>"
@@ -56,7 +57,10 @@ $(function() {
         }
 
         return lines.map(function(l) {
-            return "<p style='margin-bottom:5px'>" + l + "</p>";
+            var style = l.sub
+                ? "margin-bottom:3px; margin-left:18px; font-size:0.95em; color:#555"
+                : "margin-bottom:5px";
+            return "<p style='" + style + "'>" + l.html + "</p>";
         }).join("");
     }
 
