@@ -230,9 +230,12 @@ $(function() {
                 }, 700);
             });
 
-            // Also check once on open with the current saved value.
-            var currentUrl = $("#git_backup_repo_url_input").val();
-            OctoPrint.plugins.git_backup.checkRepo(currentUrl);
+            // Also check once on open with the current saved value — defer so
+            // KnockoutJS has time to populate the input before we read it.
+            setTimeout(function() {
+                var currentUrl = $("#git_backup_repo_url_input").val();
+                OctoPrint.plugins.git_backup.checkRepo(currentUrl);
+            }, 300);
         };
     }
 
