@@ -14,7 +14,6 @@ $(function() {
 
     OCTOPRINT_VIEWMODELS.push({
         construct: Git_backupViewModel,
-        dependencies: ["settingsViewModel"],
-        elements: ["#settings_plugin_git_backup"]
+        dependencies: ["settingsViewModel"]
     });
 });

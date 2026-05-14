@@ -9,7 +9,7 @@
         <div class="controls">
             <input type="text"
                    class="input-block-level"
-                   data-bind="value: pluginSettings.repo_url"
+                   data-bind="value: settings.plugins.git_backup.repo_url"
                    placeholder="https://github.com/user/repo.git">
             <span class="help-block">
                 {{ _('HTTPS or SSH URL of the repository to push backups to.') }}
@@ -20,7 +20,7 @@
     <div class="control-group">
         <div class="controls">
             <label class="checkbox">
-                <input type="checkbox" data-bind="checked: pluginSettings.delete_backup_after_push">
+                <input type="checkbox" data-bind="checked: settings.plugins.git_backup.delete_backup_after_push">
                 {{ _('Delete local backup after a successful push') }}
             </label>
             <span class="help-block">
