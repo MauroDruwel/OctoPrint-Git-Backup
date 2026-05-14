@@ -97,14 +97,12 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
             tmp_dir = tempfile.mkdtemp(prefix="octoprint_git_backup_")
 
             # Prevent git from hanging on interactive prompts (credentials, host-key etc.)
-            # Use gh as the credential helper so HTTPS repos authenticate via the stored gh token.
             git_env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
-            git_base = ["git", "-c", "credential.helper=!gh auth git-credential"]
 
             # Clone repo
             self._logger.info("Git Backup: Cloning repository")
             result = subprocess.run(
-                git_base + ["clone", repo_url, tmp_dir],
+                ["git", "clone", repo_url, tmp_dir],
                 capture_output=True, text=True, timeout=120, env=git_env
             )
             if result.returncode != 0:
@@ -114,7 +112,7 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
             # Set commit identity locally in this clone (scoped to the temp dir only).
             for key, value in (("user.name", _GIT_AUTHOR_NAME), ("user.email", _GIT_AUTHOR_EMAIL)):
                 result = subprocess.run(
-                    git_base + ["-C", tmp_dir, "config", key, value],
+                    ["git", "-C", tmp_dir, "config", key, value],
                     capture_output=True, text=True, timeout=10, env=git_env
                 )
                 if result.returncode != 0:
@@ -144,7 +142,7 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
             )
 
             result = subprocess.run(
-                git_base + ["-C", tmp_dir, "add", "-A"],
+                ["git", "-C", tmp_dir, "add", "-A"],
                 capture_output=True, text=True, timeout=30, env=git_env
             )
             if result.returncode != 0:
@@ -152,7 +150,7 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
                 return
 
             result = subprocess.run(
-                git_base + ["-C", tmp_dir, "commit", "-m", commit_message],
+                ["git", "-C", tmp_dir, "commit", "-m", commit_message],
                 capture_output=True, text=True, timeout=30, env=git_env
             )
             if result.returncode != 0:
@@ -164,7 +162,7 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
 
             # Use -u origin HEAD so this works for both first push (empty remote) and subsequent ones.
             result = subprocess.run(
-                git_base + ["-C", tmp_dir, "push", "-u", "origin", "HEAD"],
+                ["git", "-C", tmp_dir, "push", "-u", "origin", "HEAD"],
                 capture_output=True, text=True, timeout=120, env=git_env
             )
             if result.returncode != 0:
@@ -368,6 +366,27 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
 
         if code:
             self._auth_proc = proc
+
+            # Once the login process exits (user completed browser auth),
+            # run gh auth setup-git so git can use the stored token.
+            def _setup_git_after_login(p, logger):
+                p.wait()
+                try:
+                    subprocess.run(
+                        ["gh", "auth", "setup-git"],
+                        timeout=15,
+                        env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+                    )
+                    logger.info("Git Backup: gh auth setup-git completed")
+                except Exception as e:
+                    logger.warning("Git Backup: gh auth setup-git failed: %s", e)
+
+            threading.Thread(
+                target=_setup_git_after_login,
+                args=(proc, self._logger),
+                daemon=True,
+            ).start()
+
             return flask.jsonify({
                 "success": True,
                 "code": code,
