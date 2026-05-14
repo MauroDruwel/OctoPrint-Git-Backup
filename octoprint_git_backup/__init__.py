@@ -204,6 +204,7 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
             "install_gh": [],
             "start_auth_login": [],
             "check_repo": ["url"],
+            "setup_git": [],
         }
 
     def on_api_command(self, command, data):
@@ -215,6 +216,8 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
             return self._api_start_auth_login()
         elif command == "check_repo":
             return self._api_check_repo(data.get("url", ""))
+        elif command == "setup_git":
+            return self._api_setup_git()
 
     def _sudo(self, cmd):
         """Prepend sudo only when not already root."""
@@ -239,6 +242,19 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
             return flask.jsonify({"nwo": nwo, "is_private": None, "error": "not_found"})
         except Exception as e:
             return flask.jsonify({"nwo": nwo, "is_private": None, "error": str(e)})
+
+    def _api_setup_git(self):
+        try:
+            r = subprocess.run(
+                ["gh", "auth", "setup-git"],
+                capture_output=True, text=True, timeout=15,
+                env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+            )
+            if r.returncode == 0:
+                return flask.jsonify({"success": True})
+            return flask.jsonify({"success": False, "stderr": r.stderr.strip()[:400]})
+        except Exception as e:
+            return flask.jsonify({"success": False, "stderr": str(e)})
 
     def _api_apt_install(self, package):
         env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
@@ -460,6 +476,23 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
         else:
             result["gh_auth"] = None  # None = not applicable (gh not installed)
             result["gh_username"] = None
+
+        # Check if git is configured to use gh as credential helper for github.com.
+        # gh auth setup-git writes: credential.https://github.com.helper=!<path> auth git-credential
+        if result.get("git_installed") and result.get("gh_auth") is True:
+            try:
+                r = subprocess.run(
+                    ["git", "config", "--global", "--get",
+                     "credential.https://github.com.helper"],
+                    capture_output=True, text=True, timeout=5, env=env
+                )
+                result["git_credential_helper_set"] = (
+                    r.returncode == 0 and "git-credential" in r.stdout
+                )
+            except Exception:
+                result["git_credential_helper_set"] = False
+        else:
+            result["git_credential_helper_set"] = None
 
         return flask.jsonify(result)
 

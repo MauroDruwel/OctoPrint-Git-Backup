@@ -26,10 +26,21 @@ $(function() {
         }
 
         // gh auth
+        // gh auth line
         if (data.gh_auth === true) {
             var line = icon("check") + " GitHub CLI authenticated";
             if (data.gh_username) line += " as <strong>@" + _.escape(data.gh_username) + "</strong>";
             lines.push(line);
+
+            // git credential helper sub-check (only relevant when gh is authed)
+            if (data.git_credential_helper_set === true) {
+                lines.push("&nbsp;&nbsp;" + icon("check") + " git configured to use gh credentials");
+            } else if (data.git_credential_helper_set === false) {
+                lines.push(
+                    "&nbsp;&nbsp;" + icon("times") + " git not configured to use gh credentials — " +
+                    actionLink("setup_git_btn", "run gh auth setup-git", "OctoPrint.plugins.git_backup.setupGit()")
+                );
+            }
         } else if (data.gh_auth === false) {
             lines.push(
                 icon("times") + " GitHub CLI not authenticated — " +
@@ -86,6 +97,27 @@ $(function() {
                 }
             })
             .fail(function() { $span.html(""); });
+    };
+
+    OctoPrint.plugins.git_backup.setupGit = function() {
+        var $container = $("#git_backup_auth_status");
+        var $btn = $("#git_backup_auth_refresh");
+        $container.html(icon("spin") + " Running gh auth setup-git\u2026");
+        $btn.prop("disabled", true);
+        OctoPrint.simpleApiCommand("git_backup", "setup_git", {})
+            .done(function(data) {
+                if (data.success) {
+                    $container.html(icon("check") + " Done! Refreshing\u2026");
+                    setTimeout(OctoPrint.plugins.git_backup.checkAuthStatus, 800);
+                } else {
+                    $container.html(icon("times") + " Failed: " + _.escape(data.stderr || "unknown error"));
+                    $btn.prop("disabled", false);
+                }
+            })
+            .fail(function() {
+                $container.html(icon("times") + " Request failed.");
+                $btn.prop("disabled", false);
+            });
     };
 
     // ── Check auth status ─────────────────────────────────────────────────────
