@@ -24,6 +24,11 @@ tags:
 
 screenshots: []
 
+# attributes:
+# #  - cloud  # plugin requires access to a cloud to function
+# #  - commercial  # plugin has a commercial aspect
+# #  - free-tier  # plugin has a free tier
+
 compatibility:
   octoprint:
   - 1.6.0

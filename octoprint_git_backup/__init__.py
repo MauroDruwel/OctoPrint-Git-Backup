@@ -513,6 +513,12 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
 
 
 __plugin_name__ = "Git Backup Plugin"
+__plugin_version__ = "0.1.0"
+__plugin_description__ = "Automatically push OctoPrint backups to a remote Git repository after each backup is created."
+__plugin_author__ = "Mauro Druwel"
+__plugin_author_email__ = "mauro.druwel@gmail.com"
+__plugin_url__ = "https://github.com/MauroDruwel/OctoPrint-Git-Backup"
+__plugin_license__ = "MIT"
 __plugin_pythoncompat__ = ">=3,<4"
 
 # GitHub App bot identity for commit attribution.
