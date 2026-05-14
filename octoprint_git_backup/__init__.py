@@ -209,18 +209,19 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
         if command == "install_git":
             return self._api_apt_install("git")
         elif command == "install_gh":
-            return self._api_apt_install("gh")
+            return self._api_install_gh()
         elif command == "start_auth_login":
             return self._api_start_auth_login()
 
+    def _sudo(self, cmd):
+        """Prepend sudo only when not already root."""
+        return cmd if os.getuid() == 0 else ["sudo"] + cmd
+
     def _api_apt_install(self, package):
         env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
-        cmd = ["apt-get", "install", "-y", package]
-        if os.getuid() != 0:
-            cmd = ["sudo"] + cmd
         try:
             r = subprocess.run(
-                cmd,
+                self._sudo(["apt-get", "install", "-y", package]),
                 capture_output=True, text=True, timeout=180, env=env
             )
             if r.returncode == 0:
@@ -231,6 +232,58 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
             return flask.jsonify({"success": False, "stderr": "Installation timed out."})
         except Exception as e:
             return flask.jsonify({"success": False, "stderr": str(e)})
+
+    def _api_install_gh(self):
+        """Install GitHub CLI using the official apt repository (Debian/Ubuntu/Raspberry Pi OS)."""
+        import urllib.request
+
+        env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
+
+        def run(cmd, timeout=60):
+            r = subprocess.run(
+                self._sudo(cmd), capture_output=True, text=True, timeout=timeout, env=env
+            )
+            if r.returncode != 0:
+                raise RuntimeError(r.stderr.strip() or r.stdout.strip())
+            return r.stdout.strip()
+
+        try:
+            # 1. Get CPU arch (e.g. "amd64", "arm64", "armhf")
+            arch = subprocess.run(
+                ["dpkg", "--print-architecture"],
+                capture_output=True, text=True, timeout=5
+            ).stdout.strip()
+
+            # 2. Ensure keyring directory exists
+            run(["mkdir", "-p", "-m", "755", "/etc/apt/keyrings"])
+
+            # 3. Download GPG keyring
+            keyring_path = "/etc/apt/keyrings/githubcli-archive-keyring.gpg"
+            keyring_url = "https://cli.github.com/packages/githubcli-archive-keyring.gpg"
+            keyring_data = urllib.request.urlopen(keyring_url, timeout=30).read()
+            with open(keyring_path, "wb") as f:
+                f.write(keyring_data)
+            run(["chmod", "go+r", keyring_path])
+
+            # 4. Add apt source
+            run(["mkdir", "-p", "-m", "755", "/etc/apt/sources.list.d"])
+            source_line = (
+                "deb [arch={arch} signed-by={keyring}] "
+                "https://cli.github.com/packages stable main\n"
+            ).format(arch=arch, keyring=keyring_path)
+            with open("/etc/apt/sources.list.d/github-cli.list", "w") as f:
+                f.write(source_line)
+
+            # 5. apt-get update + install
+            run(["apt-get", "update", "-q"], timeout=120)
+            run(["apt-get", "install", "-y", "gh"], timeout=180)
+
+            return flask.jsonify({"success": True})
+        except subprocess.TimeoutExpired:
+            return flask.jsonify({"success": False, "stderr": "Installation timed out."})
+        except Exception as e:
+            self._logger.warning("gh install failed: %s", e)
+            return flask.jsonify({"success": False, "stderr": str(e)[:400]})
 
     def _api_start_auth_login(self):
         # Kill any lingering previous auth process.
