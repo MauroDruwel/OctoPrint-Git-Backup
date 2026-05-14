@@ -36,9 +36,9 @@ $(function() {
 
             // git credential helper sub-check (only relevant when gh is authed)
             if (data.git_credential_helper_set === true) {
-                pushSub(icon("check") + " git configured to use gh credentials");
+                push(icon("check") + " git configured to use gh credentials");
             } else if (data.git_credential_helper_set === false) {
-                pushSub(
+                push(
                     icon("times") + " git not configured to use gh credentials — " +
                     actionLink("setup_git_btn", "run gh auth setup-git", "OctoPrint.plugins.git_backup.setupGit()")
                 );
