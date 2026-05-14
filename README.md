@@ -1,5 +1,7 @@
 # OctoPrint Git Backup 🖨️→🐙
 
+![banner](assets/banner.png)
+
 > Backs up your OctoPrint config to Git — automatically, every time.
 
 [![GitHub release](https://img.shields.io/github/v/release/MauroDruwel/OctoPrint-Git-Backup?include_prereleases&label=release)](https://github.com/MauroDruwel/OctoPrint-Git-Backup/releases)
