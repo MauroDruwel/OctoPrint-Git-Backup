@@ -266,33 +266,32 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
             keyring_path = "/etc/apt/keyrings/githubcli-archive-keyring.gpg"
             sources_path = "/etc/apt/sources.list.d/github-cli.list"
 
-            if not os.path.isfile(sources_path):
-                run(["mkdir", "-p", "-m", "755", "/etc/apt/keyrings"])
+            run(["mkdir", "-p", "-m", "755", "/etc/apt/keyrings"])
 
-                keyring_data = urllib.request.urlopen(
-                    "https://cli.github.com/packages/githubcli-archive-keyring.gpg",
-                    timeout=30
-                ).read()
-                tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".gpg")
+            keyring_data = urllib.request.urlopen(
+                "https://cli.github.com/packages/githubcli-archive-keyring.gpg",
+                timeout=30
+            ).read()
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".gpg")
+            try:
+                tmp.write(keyring_data)
+                tmp.flush()
+                tmp.close()
+                run(["cp", tmp.name, keyring_path])
+                run(["chmod", "go+r", keyring_path])
+            finally:
                 try:
-                    tmp.write(keyring_data)
-                    tmp.flush()
-                    tmp.close()
-                    run(["cp", tmp.name, keyring_path])
-                    run(["chmod", "go+r", keyring_path])
-                finally:
-                    try:
-                        os.unlink(tmp.name)
-                    except Exception:
-                        pass
+                    os.unlink(tmp.name)
+                except Exception:
+                    pass
 
-                run(["mkdir", "-p", "-m", "755", "/etc/apt/sources.list.d"])
-                source_line = (
-                    "deb [arch={arch} signed-by={keyring}] "
-                    "https://cli.github.com/packages stable main\n"
-                ).format(arch=arch, keyring=keyring_path)
-                run(["tee", sources_path], input=source_line)
-                run(["apt-get", "update", "-q"], timeout=120)
+            run(["mkdir", "-p", "-m", "755", "/etc/apt/sources.list.d"])
+            source_line = (
+                "deb [arch={arch} signed-by={keyring}] "
+                "https://cli.github.com/packages stable main\n"
+            ).format(arch=arch, keyring=keyring_path)
+            run(["tee", sources_path], input=source_line)
+            run(["apt-get", "update", "-q"], timeout=120)
 
             run(["apt-get", "install", "-y", "gh"], timeout=180)
             return flask.jsonify({"success": True})
