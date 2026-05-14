@@ -60,6 +60,34 @@ $(function() {
         return "<a href='#' id='git_backup_" + id + "' onclick=\"" + onclick + "; return false;\">" + label + "</a>";
     }
 
+    // ── Repo privacy check ────────────────────────────────────────────────────
+
+    var _repoCheckTimer = null;
+
+    OctoPrint.plugins.git_backup.checkRepo = function(url) {
+        var $span = $("#git_backup_repo_check");
+        if (!url || !url.trim()) { $span.html(""); return; }
+
+        $span.html("<i class='fas fa-spinner fa-spin'></i> Checking\u2026");
+
+        OctoPrint.simpleApiCommand("git_backup", "check_repo", {url: url})
+            .done(function(data) {
+                if (data.nwo === null) {
+                    $span.html("<span class='muted'>Enter a valid GitHub URL to check visibility.</span>");
+                } else if (data.is_private === true) {
+                    $span.html(icon("check") + " <strong>" + _.escape(data.nwo) + "</strong> is private");
+                } else if (data.is_private === false) {
+                    $span.html(
+                        "<span style='color:#b94a48'>" + icon("times") +
+                        " <strong>" + _.escape(data.nwo) + "</strong> is <strong>public</strong> — backups may contain sensitive data!</span>"
+                    );
+                } else {
+                    $span.html("<span class='muted'>Could not verify visibility (repo not found or no access).</span>");
+                }
+            })
+            .fail(function() { $span.html(""); });
+    };
+
     // ── Check auth status ─────────────────────────────────────────────────────
 
     OctoPrint.plugins.git_backup.checkAuthStatus = function() {
@@ -192,6 +220,19 @@ $(function() {
                 _authChecked = true;
                 OctoPrint.plugins.git_backup.checkAuthStatus();
             }
+
+            // Debounced repo visibility check on URL field change.
+            $("#git_backup_repo_url_input").off("input.gitbackup").on("input.gitbackup", function() {
+                var url = $(this).val();
+                clearTimeout(_repoCheckTimer);
+                _repoCheckTimer = setTimeout(function() {
+                    OctoPrint.plugins.git_backup.checkRepo(url);
+                }, 700);
+            });
+
+            // Also check once on open with the current saved value.
+            var currentUrl = $("#git_backup_repo_url_input").val();
+            OctoPrint.plugins.git_backup.checkRepo(currentUrl);
         };
     }
 

@@ -203,6 +203,7 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
             "install_git": [],
             "install_gh": [],
             "start_auth_login": [],
+            "check_repo": ["url"],
         }
 
     def on_api_command(self, command, data):
@@ -212,10 +213,32 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
             return self._api_install_gh()
         elif command == "start_auth_login":
             return self._api_start_auth_login()
+        elif command == "check_repo":
+            return self._api_check_repo(data.get("url", ""))
 
     def _sudo(self, cmd):
         """Prepend sudo only when not already root."""
         return cmd if os.getuid() == 0 else ["sudo"] + cmd
+
+    def _api_check_repo(self, url):
+        nwo = _extract_nwo(url)
+        if not nwo:
+            return flask.jsonify({"nwo": None, "is_private": None})
+        env = {
+            **os.environ,
+            "GIT_TERMINAL_PROMPT": "0", "GH_PROMPT_DISABLED": "1",
+            "NO_COLOR": "1", "CLICOLOR": "0", "TERM": "dumb",
+        }
+        try:
+            r = subprocess.run(
+                ["gh", "repo", "view", nwo, "--json", "isPrivate", "--jq", ".isPrivate"],
+                capture_output=True, text=True, timeout=10, env=env
+            )
+            if r.returncode == 0:
+                return flask.jsonify({"nwo": nwo, "is_private": r.stdout.strip() == "true"})
+            return flask.jsonify({"nwo": nwo, "is_private": None, "error": "not_found"})
+        except Exception as e:
+            return flask.jsonify({"nwo": nwo, "is_private": None, "error": str(e)})
 
     def _api_apt_install(self, package):
         env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
@@ -441,6 +464,17 @@ __plugin_pythoncompat__ = ">=3,<4"
 # GitHub App bot identity for commit attribution.
 _GIT_AUTHOR_NAME = "octoprint-backup[bot]"
 _GIT_AUTHOR_EMAIL = "284658542+octoprint-backup[bot]@users.noreply.github.com"
+
+# Regex to extract "owner/repo" from HTTPS or SSH GitHub URLs.
+_NWO_RE = re.compile(
+    r'github\.com[:/](?P<nwo>[^/]+/[^/]+?)(?:\.git)?$'
+)
+
+
+def _extract_nwo(url):
+    """Return 'owner/repo' from a GitHub URL, or None if not parseable."""
+    m = _NWO_RE.search(url.strip())
+    return m.group("nwo") if m else None
 
 
 def __plugin_load__():

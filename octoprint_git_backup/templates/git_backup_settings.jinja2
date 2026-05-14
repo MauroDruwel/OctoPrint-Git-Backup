@@ -9,8 +9,10 @@
         <div class="controls">
             <input type="text"
                    class="input-block-level"
+                   id="git_backup_repo_url_input"
                    data-bind="value: settings.plugins.git_backup.repo_url"
                    placeholder="https://github.com/user/octoprint-backup.git">
+            <span id="git_backup_repo_check" class="help-block" style="margin-top:4px"></span>
             <span class="help-block">
                 {{ _('HTTPS URL of your GitHub repository (recommended), or an SSH URL if you prefer key-based auth.') }}
             </span>
