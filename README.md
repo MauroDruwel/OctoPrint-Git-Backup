@@ -1,6 +1,8 @@
 # OctoPrint Git Backup
 
-Automatically pushes OctoPrint backups to a GitHub repository every time a backup is created. Once you point it at a private repo and authenticate once with the GitHub CLI, every new backup is committed and pushed — giving you a full, version-controlled history of your printer's configuration.
+Automatically pushes OctoPrint backups to a remote Git repository every time a backup is created. Once you point it at a repo and authenticate once at the OS level, every new backup is committed and pushed — giving you a full, version-controlled history of your printer's configuration.
+
+While GitHub is the primary target (with built-in setup helpers for the GitHub CLI), **any git remote works** — GitLab, Gitea, Bitbucket, self-hosted — as long as git on the host is authenticated.
 
 [![Version](https://img.shields.io/badge/version-0.1.0-blue)](https://github.com/MauroDruwel/OctoPrint-Git-Backup/releases)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-green)](LICENSE)
@@ -18,9 +20,8 @@ Automatically pushes OctoPrint backups to a GitHub repository every time a backu
 ## Requirements
 
 - OctoPrint ≥ 1.6.0
-- git installed on the host
-- [GitHub CLI (`gh`)](https://cli.github.com/) installed and authenticated (`gh auth login`)
-- A **private** GitHub repository to push backups to
+- `git` installed on the host
+- A git remote the host is authenticated to push to (see [Authentication](#authentication) below)
 
 ## Setup
 
@@ -32,17 +33,20 @@ Install via the bundled [Plugin Manager](https://docs.octoprint.org/en/main/bund
 https://github.com/MauroDruwel/OctoPrint-Git-Backup/archive/main.zip
 ```
 
-### 2. Set up authentication
+### 2. Authenticate git on the host
 
-The plugin uses the **GitHub CLI** for authentication — no tokens are stored in the plugin itself.
+The plugin uses whatever git credentials are already configured at the OS level — nothing is stored in the plugin itself.
 
-**Recommended (HTTPS):**
+**GitHub via GitHub CLI (recommended for GitHub repos):**
 1. In the OctoPrint settings panel for this plugin, click **"install gh CLI"** if not already installed
 2. Click **"run gh auth login"** — a one-time code appears; open the link and enter the code in your browser
-3. The credential helper is configured automatically
+3. The git credential helper is configured automatically
 
-**Alternative (SSH):**
-Use an SSH URL (`git@github.com:user/repo.git`) and [set up an SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) on the host.
+**SSH key (works for any git host):**
+Use an SSH URL (`git@github.com:user/repo.git`, `git@gitlab.com:user/repo.git`, etc.) and [set up an SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) on the host. This works for GitHub, GitLab, Gitea, Bitbucket, or any self-hosted git server.
+
+**Other HTTPS credentials:**
+Configure git's credential helper on the host (e.g. `git config --global credential.helper store` or the OS keychain helper). Any HTTPS remote git can push to will work.
 
 ### 3. Configure the plugin
 

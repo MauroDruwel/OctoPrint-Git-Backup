@@ -30,13 +30,17 @@ compatibility:
 
   os:
   - linux
+  - windows
   - macos
+  - freebsd
 
   python: ">=3,<4"
 
 ---
 
-Automatically pushes OctoPrint backups to a private GitHub repository every time a backup is created. Once configured with a repo URL and authenticated via the GitHub CLI, every new backup is committed and pushed — keeping a full version-controlled history of your printer's configuration.
+Automatically pushes OctoPrint backups to a remote Git repository every time a backup is created. Once configured with a repo URL, every new backup is committed and pushed — keeping a full version-controlled history of your printer's configuration.
+
+While GitHub is the primary target (with built-in GitHub CLI setup helpers), **any git remote works** — GitLab, Gitea, Bitbucket, self-hosted — as long as the host running OctoPrint is authenticated at the OS level (SSH key, credential manager, or `gh auth login` for GitHub).
 
 ## Features
 
