@@ -234,7 +234,7 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
             return flask.jsonify({"success": False, "stderr": str(e)})
 
     def _api_install_gh(self):
-        """Install GitHub CLI using the official apt repository (Debian/Ubuntu/Raspberry Pi OS)."""
+        """Install GitHub CLI: try plain apt first, fall back to official repo method."""
         import urllib.request
 
         env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
@@ -250,7 +250,14 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
             return r.stdout.strip()
 
         try:
-            # 1. Get CPU arch (e.g. "amd64", "arm64", "armhf")
+            # Fast path: gh is already in the default repos (some distros have it).
+            try:
+                run(["apt-get", "install", "-y", "gh"], timeout=120)
+                return flask.jsonify({"success": True})
+            except Exception:
+                pass  # Not in default repos — fall through to official method.
+
+            # Official method: add GitHub CLI apt repo, then install.
             arch = subprocess.run(
                 ["dpkg", "--print-architecture"],
                 capture_output=True, text=True, timeout=5
@@ -258,45 +265,38 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
 
             keyring_path = "/etc/apt/keyrings/githubcli-archive-keyring.gpg"
             sources_path = "/etc/apt/sources.list.d/github-cli.list"
-            repo_already_present = os.path.isfile(sources_path)
 
-            if not repo_already_present:
-                # 2. Ensure keyring directory exists
+            if not os.path.isfile(sources_path):
                 run(["mkdir", "-p", "-m", "755", "/etc/apt/keyrings"])
 
-                # 3. Download GPG keyring, write via sudo tee (works root or not)
-                keyring_url = "https://cli.github.com/packages/githubcli-archive-keyring.gpg"
-                keyring_data = urllib.request.urlopen(keyring_url, timeout=30).read()
-
-                # Write to temp file first, then sudo-copy to final path
-                tmp_keyring = tempfile.NamedTemporaryFile(delete=False, suffix=".gpg")
+                keyring_data = urllib.request.urlopen(
+                    "https://cli.github.com/packages/githubcli-archive-keyring.gpg",
+                    timeout=30
+                ).read()
+                tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".gpg")
                 try:
-                    tmp_keyring.write(keyring_data)
-                    tmp_keyring.flush()
-                    tmp_keyring.close()
-                    run(["cp", tmp_keyring.name, keyring_path])
+                    tmp.write(keyring_data)
+                    tmp.flush()
+                    tmp.close()
+                    run(["cp", tmp.name, keyring_path])
                     run(["chmod", "go+r", keyring_path])
                 finally:
                     try:
-                        os.unlink(tmp_keyring.name)
+                        os.unlink(tmp.name)
                     except Exception:
                         pass
 
-                # 4. Add apt source via sudo tee
                 run(["mkdir", "-p", "-m", "755", "/etc/apt/sources.list.d"])
                 source_line = (
                     "deb [arch={arch} signed-by={keyring}] "
                     "https://cli.github.com/packages stable main\n"
                 ).format(arch=arch, keyring=keyring_path)
                 run(["tee", sources_path], input=source_line)
-
-                # 5. Update package index after adding new repo
                 run(["apt-get", "update", "-q"], timeout=120)
 
-            # 6. Install (or upgrade) gh
             run(["apt-get", "install", "-y", "gh"], timeout=180)
-
             return flask.jsonify({"success": True})
+
         except subprocess.TimeoutExpired:
             return flask.jsonify({"success": False, "stderr": "Installation timed out."})
         except Exception as e:
