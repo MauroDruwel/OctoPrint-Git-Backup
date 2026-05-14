@@ -6,7 +6,7 @@ title: Git Backup Plugin
 description: Automatically push OctoPrint backups to a remote Git repository after each backup is created. One-click install and auth setup for apt-based systems (Raspberry Pi OS, Ubuntu, Debian).
 authors:
 - Mauro Druwel
-license: AGPL-3.0-or-later
+license: MIT
 
 date: 2026-05-14
 

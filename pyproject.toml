@@ -10,9 +10,7 @@ authors = [
     {name = "Mauro Druwel", email = "mauro.druwel@gmail.com"}
 ]
 readme = {file = "README.md", content-type = "text/markdown"}
-dynamic = [
-    "license"
-]
+license = {file = "LICENSE"}
 
 requires-python = ">=3.7, <4"
 
