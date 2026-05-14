@@ -130,7 +130,7 @@ $(function() {
                     "<p style='margin-bottom:6px'><strong>Your one-time code:</strong></p>" +
                     "<p style='margin-bottom:10px'>" +
                         "<code style='font-size:1.5em;letter-spacing:3px;padding:5px 10px'>" + _.escape(data.code) + "</code>" +
-                        " <button class='btn btn-mini' id='git_backup_copy_btn' style='margin-left:8px'>Copy</button>" +
+                        " <button type='button' class='btn btn-mini' id='git_backup_copy_btn' style='margin-left:8px'>Copy</button>" +
                     "</p>" +
                     "<p style='margin-bottom:10px'>" +
                         "<a href='" + _.escape(data.url) + "' target='_blank' rel='noopener noreferrer' class='btn btn-primary btn-small'>" +
