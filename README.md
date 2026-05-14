@@ -20,8 +20,9 @@ While GitHub is the primary target (with built-in setup helpers for the GitHub C
 ## Requirements
 
 - OctoPrint ≥ 1.6.0
-- `git` installed on the host
-- A git remote the host is authenticated to push to (see [Authentication](#authentication) below)
+- A git remote to push backups to
+
+On **apt-based systems** (Raspberry Pi OS, Ubuntu, Debian — i.e. most OctoPrint installs), `git` and the GitHub CLI can be installed with one click directly from the plugin's settings panel. On other systems you'll need to install them yourself, but if you're running OctoPrint on a non-apt system you're probably already comfortable with that.
 
 ## Setup
 
@@ -33,14 +34,18 @@ Install via the bundled [Plugin Manager](https://docs.octoprint.org/en/main/bund
 https://github.com/MauroDruwel/OctoPrint-Git-Backup/archive/main.zip
 ```
 
-### 2. Authenticate git on the host
+### 2. Install git & authenticate
+
+**On apt-based systems (Raspberry Pi OS, Ubuntu, Debian):** Everything can be done from the plugin's settings panel — install `git`, install the GitHub CLI (`gh`), and run `gh auth login` with one button each. The credential helper is configured automatically after login.
+
+**On other systems:** Install `git` via your package manager, then authenticate using one of the methods below.
 
 The plugin uses whatever git credentials are already configured at the OS level — nothing is stored in the plugin itself.
 
-**GitHub via GitHub CLI (recommended for GitHub repos):**
-1. In the OctoPrint settings panel for this plugin, click **"install gh CLI"** if not already installed
-2. Click **"run gh auth login"** — a one-time code appears; open the link and enter the code in your browser
-3. The git credential helper is configured automatically
+**GitHub via GitHub CLI:**
+1. [Install `gh`](https://github.com/cli/cli#installation) if not already installed
+2. Run `gh auth login` — follow the prompts
+3. Run `gh auth setup-git` to wire the credential helper
 
 **SSH key (works for any git host):**
 Use an SSH URL (`git@github.com:user/repo.git`, `git@gitlab.com:user/repo.git`, etc.) and [set up an SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) on the host. This works for GitHub, GitLab, Gitea, Bitbucket, or any self-hosted git server.

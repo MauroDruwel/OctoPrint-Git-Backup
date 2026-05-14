@@ -3,7 +3,7 @@ layout: plugin
 
 id: git_backup
 title: Git Backup Plugin
-description: Automatically push OctoPrint backups to a private GitHub repository after each backup is created
+description: Automatically push OctoPrint backups to a remote Git repository after each backup is created. One-click install and auth setup for apt-based systems (Raspberry Pi OS, Ubuntu, Debian).
 authors:
 - Mauro Druwel
 license: AGPL-3.0-or-later
@@ -50,4 +50,4 @@ While GitHub is the primary target (with built-in GitHub CLI setup helpers), **a
 - **Optional auto-delete** — remove the local `.zip` after a successful push to save disk space
 - **README-safe** — existing `README.md` in the repo is never overwritten by backup contents
 - **Live auth status panel** — shows git/gh CLI status and credential helper setup in the OctoPrint settings UI
-- **One-click setup buttons** — install git, install gh CLI, and run `gh auth login` directly from the settings panel
+- **One-click setup buttons** — install git, install gh CLI, and run `gh auth login` directly from the settings panel (apt-based systems)
