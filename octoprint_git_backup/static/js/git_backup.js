@@ -139,29 +139,46 @@ $(function() {
             .always(function() { $btn.prop("disabled", false); });
     };
 
+    // ── Simple confirm dialog (Bootstrap modal, no bootbox needed) ────────────
+
+    function confirmDialog(title, bodyHtml, confirmLabel, onConfirm) {
+        var id = "git_backup_confirm_modal";
+        $("#" + id).remove();
+        var html =
+            "<div id='" + id + "' class='modal hide fade' tabindex='-1'>" +
+              "<div class='modal-header'><h3>" + title + "</h3></div>" +
+              "<div class='modal-body'>" + bodyHtml + "</div>" +
+              "<div class='modal-footer'>" +
+                "<button class='btn' data-dismiss='modal'>Cancel</button>" +
+                "<button class='btn btn-primary' id='" + id + "_ok'>" + confirmLabel + "</button>" +
+              "</div>" +
+            "</div>";
+        $("body").append(html);
+        var $modal = $("#" + id);
+        $modal.on("hidden", function() { $modal.remove(); });
+        $("#" + id + "_ok").on("click", function() {
+            $modal.modal("hide");
+            onConfirm();
+        });
+        $modal.modal("show");
+    }
+
     // ── Install git / gh CLI ──────────────────────────────────────────────────
 
     OctoPrint.plugins.git_backup.installPackage = function(pkg) {
         var isGit  = pkg === "git";
         var label  = isGit ? "git" : "GitHub CLI (gh)";
         var cmdLine = isGit
-            ? "apt-get install -y git"
-            : "apt-get install -y gh  (or full GitHub CLI repo setup if gh is not in your default apt sources)";
+            ? "<code>apt-get install -y git</code>"
+            : "<code>apt-get install -y gh</code> (falls back to full GitHub CLI repo setup if gh isn't in your default apt sources)";
 
-        bootbox.confirm({
-            title: "Install " + label + "?",
-            message:
-                "<p>This will run the following command on your OctoPrint host:</p>" +
-                "<pre style='margin:8px 0'>" + cmdLine + "</pre>" +
-                "<p class='muted' style='margin-bottom:0'>Requires apt (Debian / Ubuntu / Raspberry Pi OS). " +
-                "If you are not on an apt-based system, install " + label + " manually instead.</p>",
-            buttons: {
-                cancel:  { label: "Cancel",  className: "btn" },
-                confirm: { label: "Install", className: "btn btn-primary" }
-            },
-            callback: function(confirmed) {
-                if (!confirmed) return;
-
+        confirmDialog(
+            "Install " + label + "?",
+            "<p>This will run the following on your OctoPrint host:</p>" +
+            "<p>" + cmdLine + "</p>" +
+            "<p class='muted' style='margin-bottom:0'>Requires apt (Debian / Ubuntu / Raspberry Pi OS). On other systems, install " + label + " manually.</p>",
+            "Install",
+            function() {
                 var $container = $("#git_backup_auth_status");
                 var $btn = $("#git_backup_auth_refresh");
 
@@ -187,7 +204,7 @@ $(function() {
                         $btn.prop("disabled", false);
                     });
             }
-        });
+        );
     };
 
     // ── gh auth login (device flow) ───────────────────────────────────────────
