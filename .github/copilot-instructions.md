@@ -102,7 +102,18 @@ if helpers and "delete_backup" in helpers:
 
 > **Note**: The backup plugin's helpers and `after_backup`/`before_backup` hooks require OctoPrint ≥ 1.6.0 (helpers) / ≥ 1.9.0 (hooks). Guard with `if helpers and "create_backup" in helpers` to stay compatible with older versions.
 
-## Key Conventions
+## Versioning
+
+Version is defined **once** in `pyproject.toml` (`version = "0.1.0"`). When releasing:
+
+1. Bump `version` in `pyproject.toml`
+2. Create a matching git tag: `git tag v<version> && git push origin v<version>`
+
+OctoPrint's Software Update plugin uses GitHub releases/tags to notify users of updates (wired via `get_update_information()` in `__init__.py` — no code change needed there).
+
+Keep `extras/git_backup.md` (the plugin registry listing) in sync with `pyproject.toml` — bump its `version:` field too when releasing.
+
+
 
 - **Asset filenames** must match the plugin identifier: `git_backup.js`, `git_backup.css`, `git_backup.less`
 - **Template bindings**: UI elements are bound by ID convention `#settings_plugin_git_backup`, `#tab_plugin_git_backup`, etc.
