@@ -478,6 +478,18 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
             result["git_installed"] = False
             result["git_version"] = None
 
+        # git-lfs
+        try:
+            r = subprocess.run(
+                ["git", "lfs", "version"],
+                capture_output=True, text=True, timeout=5, env=env
+            )
+            result["git_lfs_installed"] = r.returncode == 0
+            result["git_lfs_version"] = r.stdout.strip() if r.returncode == 0 else None
+        except Exception:
+            result["git_lfs_installed"] = False
+            result["git_lfs_version"] = None
+
         # gh CLI presence
         try:
             r = subprocess.run(
