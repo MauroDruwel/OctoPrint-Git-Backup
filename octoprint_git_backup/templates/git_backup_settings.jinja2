@@ -2,7 +2,7 @@
 
     <div class="alert alert-warning" style="margin-bottom:16px">
         <i class="fas fa-lock"></i>
-        <strong>{{ _('Use a private repository') }}</strong> —
+        <strong>{{ _('Use a private repository') }}</strong>,
         {{ _('backups may contain API keys, plugin settings, and credentials.') }}
     </div>
 
@@ -38,14 +38,14 @@
         <div class="controls">
             <p class="help-block" style="margin:0 0 6px">
                 <i class="fas fa-info-circle"></i>
-                {{ _('No credentials are stored — auth is configured once at the OS level.') }}
+                {{ _('No credentials are stored, auth is configured once at the OS level.') }}
             </p>
             <ul class="help-block" style="margin:0 0 4px; padding-left:18px">
                 <li>
                     <strong>{{ _('Recommended:') }}</strong>
                     {{ _('HTTPS URL +') }}
                     <a href="https://cli.github.com" target="_blank" rel="noopener noreferrer">{{ _('GitHub CLI') }}</a>
-                    — {{ _('run') }} <code>gh auth login</code> {{ _('once on your Pi.') }}
+                   , {{ _('run') }} <code>gh auth login</code> {{ _('once on your Pi.') }}
                 </li>
                 <li>
                     <strong>{{ _('Alternative:') }}</strong>
@@ -77,8 +77,8 @@
         <div class="controls">
             <ul class="help-block" style="margin:0; padding-left:18px">
                 <li>
-                    {{ _('Exclude <strong>timelapses</strong> and <strong>uploads</strong> from OctoPrint backups to keep your repo small — GitHub rejects files over 100 MB') }}
-                    — {{ _('do this in') }}
+                    {{ _('Exclude <strong>timelapses</strong> and <strong>uploads</strong> from OctoPrint backups to keep your repo small, GitHub rejects files over 100 MB') }}
+                   , {{ _('do this in') }}
                     <strong>{{ _('Settings → Backup & Restore → Create backup') }}</strong>.
                 </li>
                 <li>
@@ -89,7 +89,7 @@
                 <li>
                     {{ _('Back up on a schedule?') }}
                     <a href="https://plugins.octoprint.org/plugins/backup_scheduler/" target="_blank" rel="noopener noreferrer">{{ _('Backup Scheduler') }}</a>
-                    {{ _('triggers OctoPrint backups automatically — this plugin will push each one.') }}
+                    {{ _('triggers OctoPrint backups automatically, this plugin will push each one.') }}
                 </li>
             </ul>
         </div>

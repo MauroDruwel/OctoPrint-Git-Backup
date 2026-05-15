@@ -23,7 +23,7 @@ $(function() {
             push(icon("check") + " " + _.escape(data.git_version || "git installed"));
         } else {
             push(
-                icon("times") + " <strong>git not found</strong> — " +
+                icon("times") + " <strong>git not found</strong>, " +
                 actionLink("install_git_btn", "install git", "OctoPrint.plugins.git_backup.installPackage('git')")
             );
         }
@@ -39,18 +39,18 @@ $(function() {
                 push(icon("check") + " git configured to use gh credentials");
             } else if (data.git_credential_helper_set === false) {
                 push(
-                    icon("times") + " git not configured to use gh credentials — " +
+                    icon("times") + " git not configured to use gh credentials, " +
                     actionLink("setup_git_btn", "run gh auth setup-git", "OctoPrint.plugins.git_backup.setupGit()")
                 );
             }
         } else if (data.gh_auth === false) {
             push(
-                icon("times") + " GitHub CLI not authenticated — " +
+                icon("times") + " GitHub CLI not authenticated, " +
                 actionLink("gh_login_btn", "run gh auth login", "OctoPrint.plugins.git_backup.startAuthLogin()")
             );
         } else {
             push(
-                icon("minus") + " GitHub CLI not installed — " +
+                icon("minus") + " GitHub CLI not installed, " +
                 actionLink("install_gh_btn", "install gh CLI", "OctoPrint.plugins.git_backup.installPackage('gh')") +
                 " or see <a href='https://cli.github.com' target='_blank' rel='noopener noreferrer'>manual instructions</a>"
             );
@@ -94,7 +94,7 @@ $(function() {
                 } else if (data.is_private === false) {
                     $span.html(
                         "<span style='color:#b94a48'>" + icon("times") +
-                        " <strong>" + _.escape(data.nwo) + "</strong> is <strong>public</strong> — backups may contain sensitive data!</span>"
+                        " <strong>" + _.escape(data.nwo) + "</strong> is <strong>public</strong>, backups may contain sensitive data!</span>"
                     );
                 } else {
                     $span.html("<span class='muted'>Could not verify visibility (repo not found or no access).</span>");
