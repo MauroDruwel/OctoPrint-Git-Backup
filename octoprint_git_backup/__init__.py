@@ -136,44 +136,24 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
             with zipfile.ZipFile(backup_path, "r") as zf:
                 zf.extractall(tmp_dir)
 
-            # Track only files >100 MB through Git LFS (per-file, not by pattern).
-            # This avoids sending small files through LFS unnecessarily.
-            _LFS_THRESHOLD = 100 * 1024 * 1024  # 100 MB
-
-            large_files = [
-                fname for fname in os.listdir(tmp_dir)
-                if os.path.isfile(os.path.join(tmp_dir, fname))
-                and os.path.getsize(os.path.join(tmp_dir, fname)) > _LFS_THRESHOLD
-            ]
-
+            # Git LFS: install hooks globally (idempotent) then declare tracking
+            # patterns in .gitattributes. The pre-push hook installed by
+            # 'git lfs install' will handle uploading LFS objects automatically.
             lfs_available = subprocess.run(
                 ["git", "lfs", "version"],
                 capture_output=True, timeout=5
             ).returncode == 0
 
-            if large_files and lfs_available:
-                self._logger.info(
-                    "Git Backup: git-lfs found, tracking %d large file(s) via LFS: %s",
-                    len(large_files), large_files
-                )
-                lfs_init = subprocess.run(
-                    ["git", "-C", tmp_dir, "lfs", "install", "--local"],
+            if lfs_available:
+                subprocess.run(
+                    ["git", "lfs", "install"],
                     capture_output=True, text=True, timeout=10, env=git_env
                 )
-                if lfs_init.returncode != 0:
-                    self._logger.warning("Git Backup: git lfs install failed:\n%s", lfs_init.stderr)
-                else:
-                    for fname in large_files:
-                        subprocess.run(
-                            ["git", "-C", tmp_dir, "lfs", "track", fname],
-                            capture_output=True, text=True, timeout=10, env=git_env
-                        )
-            elif large_files and not lfs_available:
-                self._logger.warning(
-                    "Git Backup: %d file(s) exceed 100 MB but git-lfs is not installed: %s. "
-                    "Install git-lfs to avoid push failures.",
-                    len(large_files), large_files
-                )
+                for pattern in _LFS_PATTERNS:
+                    subprocess.run(
+                        ["git", "-C", tmp_dir, "lfs", "track", pattern],
+                        capture_output=True, text=True, timeout=10, env=git_env
+                    )
 
             # Stage, commit, push
             commit_message = "OctoPrint backup {}".format(
@@ -575,6 +555,13 @@ __plugin_pythoncompat__ = ">=3,<4"
 # GitHub App bot identity for commit attribution.
 _GIT_AUTHOR_NAME = "octoprint-backup[bot]"
 _GIT_AUTHOR_EMAIL = "284658542+octoprint-backup[bot]@users.noreply.github.com"
+
+# File patterns tracked via Git LFS when git-lfs is installed.
+_LFS_PATTERNS = [
+    "*.mp4", "*.mpeg", "*.avi", "*.mov", "*.mkv",  # timelapse videos
+    "*.stl", "*.3mf", "*.obj",                      # 3D model files
+    "*.gcode", "*.bgcode",                          # slicer files
+]
 
 # Regex to extract "owner/repo" from HTTPS or SSH GitHub URLs.
 _NWO_RE = re.compile(
