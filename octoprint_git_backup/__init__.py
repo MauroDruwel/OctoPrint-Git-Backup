@@ -121,7 +121,7 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
 
             # Clear existing files from clone (preserve .git and any manually maintained files)
             # so files deleted in OctoPrint are also removed from git on the next push.
-            _PRESERVE = {".git"}
+            _PRESERVE = {".git", ".gitattributes"}
             for item in os.listdir(tmp_dir):
                 if item in _PRESERVE or item.lower() == "readme.md":
                     continue
@@ -135,6 +135,42 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
             self._logger.info("Git Backup: Extracting backup %s", backup_name)
             with zipfile.ZipFile(backup_path, "r") as zf:
                 zf.extractall(tmp_dir)
+
+            # Set up Git LFS tracking after extraction so we always win over any
+            # .gitattributes that may have been inside the zip.
+            lfs_available = subprocess.run(
+                ["git", "lfs", "version"],
+                capture_output=True, timeout=5
+            ).returncode == 0
+
+            if lfs_available:
+                self._logger.info("Git Backup: git-lfs found, configuring LFS tracking")
+                lfs_init = subprocess.run(
+                    ["git", "-C", tmp_dir, "lfs", "install", "--local"],
+                    capture_output=True, text=True, timeout=10, env=git_env
+                )
+                if lfs_init.returncode != 0:
+                    self._logger.warning("Git Backup: git lfs install failed:\n%s", lfs_init.stderr)
+                else:
+                    for pattern in _LFS_PATTERNS:
+                        subprocess.run(
+                            ["git", "-C", tmp_dir, "lfs", "track", pattern],
+                            capture_output=True, text=True, timeout=10, env=git_env
+                        )
+            else:
+                # Warn if any large files are present that may hit the Git file-size limit
+                large = [
+                    f for f in os.listdir(tmp_dir)
+                    if os.path.isfile(os.path.join(tmp_dir, f))
+                    and any(f.lower().endswith(ext) for ext in (".mp4", ".mpeg", ".avi", ".mov", ".mkv"))
+                    and os.path.getsize(os.path.join(tmp_dir, f)) > 50 * 1024 * 1024
+                ]
+                if large:
+                    self._logger.warning(
+                        "Git Backup: git-lfs is not installed but large video files were found: %s. "
+                        "Install git-lfs to avoid push failures for files over 100 MB.",
+                        large
+                    )
 
             # Stage, commit, push
             commit_message = "OctoPrint backup {}".format(
@@ -524,6 +560,13 @@ __plugin_pythoncompat__ = ">=3,<4"
 # GitHub App bot identity for commit attribution.
 _GIT_AUTHOR_NAME = "octoprint-backup[bot]"
 _GIT_AUTHOR_EMAIL = "284658542+octoprint-backup[bot]@users.noreply.github.com"
+
+# File patterns tracked via Git LFS when git-lfs is available.
+_LFS_PATTERNS = [
+    "*.mp4", "*.mpeg", "*.avi", "*.mov", "*.mkv",  # timelapse videos
+    "*.stl", "*.3mf", "*.obj",                      # 3D model files
+    "*.zip",                                         # nested zips
+]
 
 # Regex to extract "owner/repo" from HTTPS or SSH GitHub URLs.
 _NWO_RE = re.compile(
