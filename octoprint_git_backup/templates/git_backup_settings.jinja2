@@ -1,9 +1,12 @@
 <form class="form-horizontal">
-    <div class="alert alert-warning">
-        <strong>{{ _('Use a private repository!') }}</strong>
-        {{ _('OctoPrint backups may contain sensitive data (API keys, plugin settings, credentials). Only push to a repository that is set to private on GitHub.') }}
+
+    <div class="alert alert-warning" style="margin-bottom:16px">
+        <i class="fas fa-lock"></i>
+        <strong>{{ _('Use a private repository') }}</strong> —
+        {{ _('backups may contain API keys, plugin settings, and credentials.') }}
     </div>
 
+    <!-- Repository URL -->
     <div class="control-group">
         <label class="control-label">{{ _('Repository URL') }}</label>
         <div class="controls">
@@ -13,50 +16,52 @@
                    data-bind="value: settings.plugins.git_backup.repo_url"
                    placeholder="https://github.com/user/octoprint-backup.git">
             <span id="git_backup_repo_check" class="help-block" style="margin-top:4px"></span>
-            <span class="help-block">
-                {{ _('HTTPS URL of your GitHub repository (recommended), or an SSH URL if you prefer key-based auth.') }}
-            </span>
+            <span class="help-block">{{ _('HTTPS (recommended) or SSH URL of your GitHub repository.') }}</span>
         </div>
     </div>
 
+    <!-- Options -->
     <div class="control-group">
+        <label class="control-label">{{ _('Options') }}</label>
         <div class="controls">
             <label class="checkbox">
                 <input type="checkbox" data-bind="checked: settings.plugins.git_backup.delete_backup_after_push">
                 {{ _('Delete local backup after a successful push') }}
             </label>
-            <span class="help-block">
-                {{ _('If enabled, the .zip backup is removed from OctoPrint once it has been pushed to the repository.') }}
-            </span>
+            <span class="help-block">{{ _('Removes the .zip from OctoPrint once it has been pushed.') }}</span>
         </div>
     </div>
 
+    <!-- Authentication -->
     <div class="control-group">
         <label class="control-label">{{ _('Authentication') }}</label>
         <div class="controls">
-            <p class="help-block" style="margin-bottom: 6px;">
+            <p class="help-block" style="margin:0 0 6px">
                 <i class="fas fa-info-circle"></i>
-                {{ _('No credentials are stored in the plugin — authentication is handled once at the OS level.') }}
+                {{ _('No credentials are stored — auth is configured once at the OS level.') }}
             </p>
-            <p class="help-block" style="margin-bottom: 4px;">
-                <strong>{{ _('Recommended:') }}</strong>
-                {{ _('Use an HTTPS URL and authenticate with the') }}
-                <a href="https://cli.github.com" target="_blank" rel="noopener noreferrer">{{ _('GitHub CLI') }}</a>.
-                {{ _('Run') }} <code>gh auth login</code> {{ _('once on your OctoPrint host and git will use it automatically.') }}
-            </p>
-            <p class="help-block" style="margin-bottom: 0;">
-                <strong>{{ _('Alternative:') }}</strong>
-                {{ _('Use an SSH URL') }} (<code>git@github.com:user/repo.git</code>) {{ _('and') }}
-                <a href="https://docs.github.com/en/authentication/connecting-to-github-with-ssh" target="_blank" rel="noopener noreferrer">{{ _('configure an SSH key') }}</a>
-                {{ _('on your host.') }}
-            </p>
+            <ul class="help-block" style="margin:0 0 4px; padding-left:18px">
+                <li>
+                    <strong>{{ _('Recommended:') }}</strong>
+                    {{ _('HTTPS URL +') }}
+                    <a href="https://cli.github.com" target="_blank" rel="noopener noreferrer">{{ _('GitHub CLI') }}</a>
+                    — {{ _('run') }} <code>gh auth login</code> {{ _('once on your Pi.') }}
+                </li>
+                <li>
+                    <strong>{{ _('Alternative:') }}</strong>
+                    {{ _('SSH URL +') }}
+                    <a href="https://docs.github.com/en/authentication/connecting-to-github-with-ssh" target="_blank" rel="noopener noreferrer">{{ _('SSH key') }}</a>
+                    (<code>git@github.com:user/repo.git</code>)
+                </li>
+            </ul>
         </div>
     </div>
 
+    <!-- Auth / Setup Status -->
     <div class="control-group">
-        <label class="control-label">{{ _('Auth Status') }}</label>
+        <label class="control-label">{{ _('Status') }}</label>
         <div class="controls">
-            <div id="git_backup_auth_status" style="margin-bottom: 8px;">
+            <div id="git_backup_auth_status" style="margin-bottom:8px">
                 <span class="muted">{{ _('Not checked yet.') }}</span>
             </div>
             <button class="btn btn-small" id="git_backup_auth_refresh"
@@ -65,4 +70,29 @@
             </button>
         </div>
     </div>
+
+    <!-- Tips -->
+    <div class="control-group">
+        <label class="control-label">{{ _('Tips') }}</label>
+        <div class="controls">
+            <ul class="help-block" style="margin:0; padding-left:18px">
+                <li>
+                    {{ _('Exclude <strong>timelapses</strong> and <strong>uploads</strong> from OctoPrint backups to keep your repo small') }}
+                    — {{ _('do this in') }}
+                    <strong>{{ _('Settings → Backup & Restore → Create backup') }}</strong>.
+                </li>
+                <li>
+                    {{ _('Want beautiful timelapses?') }}
+                    <a href="https://plugins.octoprint.org/plugins/octolapse/" target="_blank" rel="noopener noreferrer">Octolapse</a>
+                    {{ _('renders them frame-by-frame and keeps them out of your backup entirely.') }}
+                </li>
+                <li>
+                    {{ _('Back up on a schedule?') }}
+                    <a href="https://plugins.octoprint.org/plugins/backup_scheduler/" target="_blank" rel="noopener noreferrer">{{ _('Backup Scheduler') }}</a>
+                    {{ _('triggers OctoPrint backups automatically — this plugin will push each one.') }}
+                </li>
+            </ul>
+        </div>
+    </div>
+
 </form>
