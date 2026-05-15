@@ -28,16 +28,6 @@ $(function() {
             );
         }
 
-        // git-lfs
-        if (data.git_lfs_installed) {
-            push(icon("check") + " " + _.escape(data.git_lfs_version || "git-lfs installed") + " <small style='color:#999'>(large files → LFS automatically)</small>");
-        } else {
-            push(
-                icon("minus") + " <strong>git-lfs not installed</strong> — files &gt;100 MB will fail to push — " +
-                actionLink("install_git_lfs_btn", "install git-lfs", "OctoPrint.plugins.git_backup.installPackage('git-lfs')")
-            );
-        }
-
         // gh auth
         if (data.gh_auth === true) {
             var line = icon("check") + " GitHub CLI authenticated";
