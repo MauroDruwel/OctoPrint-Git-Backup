@@ -1,6 +1,3 @@
-# coding=utf-8
-from __future__ import absolute_import
-
 import os
 import re
 import select
@@ -41,9 +38,12 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
 
     ##~~ TemplatePlugin mixin
 
+    def is_template_autoescaped(self):
+        return True
+
     def get_template_configs(self):
         return [
-            dict(type="settings", custom_bindings=False)
+            dict(type="settings", custom_bindings=True)
         ]
 
     ##~~ AssetPlugin mixin
@@ -75,7 +75,7 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
             target=self._push_backup_to_git,
             args=(backup_path, backup_name),
             name="git_backup_push",
-            daemon=False
+            daemon=True
         )
         thread.start()
 
@@ -200,28 +200,18 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
 
     def get_api_commands(self):
         return {
-            "install_git": [],
-            "install_gh": [],
             "start_auth_login": [],
             "check_repo": ["url"],
             "setup_git": [],
         }
 
     def on_api_command(self, command, data):
-        if command == "install_git":
-            return self._api_apt_install("git")
-        elif command == "install_gh":
-            return self._api_install_gh()
-        elif command == "start_auth_login":
+        if command == "start_auth_login":
             return self._api_start_auth_login()
         elif command == "check_repo":
             return self._api_check_repo(data.get("url", ""))
         elif command == "setup_git":
             return self._api_setup_git()
-
-    def _sudo(self, cmd):
-        """Prepend sudo only when not already root."""
-        return cmd if os.getuid() == 0 else ["sudo"] + cmd
 
     def _api_check_repo(self, url):
         nwo = _extract_nwo(url)
@@ -255,91 +245,6 @@ class Git_backupPlugin(octoprint.plugin.SettingsPlugin,
             return flask.jsonify({"success": False, "stderr": r.stderr.strip()[:400]})
         except Exception as e:
             return flask.jsonify({"success": False, "stderr": str(e)})
-
-    def _api_apt_install(self, package):
-        env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
-        try:
-            r = subprocess.run(
-                self._sudo(["apt-get", "install", "-y", package]),
-                capture_output=True, text=True, timeout=180, env=env
-            )
-            if r.returncode == 0:
-                return flask.jsonify({"success": True})
-            self._logger.warning("apt-get install %s failed:\n%s", package, r.stderr)
-            return flask.jsonify({"success": False, "stderr": r.stderr[:400]})
-        except subprocess.TimeoutExpired:
-            return flask.jsonify({"success": False, "stderr": "Installation timed out."})
-        except Exception as e:
-            return flask.jsonify({"success": False, "stderr": str(e)})
-
-    def _api_install_gh(self):
-        """Install GitHub CLI: try plain apt first, fall back to official repo method."""
-        import urllib.request
-
-        env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
-
-        def run(cmd, timeout=60, input=None):
-            r = subprocess.run(
-                self._sudo(cmd),
-                capture_output=True, text=True, timeout=timeout,
-                env=env, input=input
-            )
-            if r.returncode != 0:
-                raise RuntimeError(r.stderr.strip() or r.stdout.strip())
-            return r.stdout.strip()
-
-        try:
-            # Fast path: gh is already in the default repos (some distros have it).
-            try:
-                run(["apt-get", "install", "-y", "gh"], timeout=120)
-                return flask.jsonify({"success": True})
-            except Exception:
-                pass  # Not in default repos — fall through to official method.
-
-            # Official method: add GitHub CLI apt repo, then install.
-            arch = subprocess.run(
-                ["dpkg", "--print-architecture"],
-                capture_output=True, text=True, timeout=5
-            ).stdout.strip()
-
-            keyring_path = "/etc/apt/keyrings/githubcli-archive-keyring.gpg"
-            sources_path = "/etc/apt/sources.list.d/github-cli.list"
-
-            run(["mkdir", "-p", "-m", "755", "/etc/apt/keyrings"])
-
-            keyring_data = urllib.request.urlopen(
-                "https://cli.github.com/packages/githubcli-archive-keyring.gpg",
-                timeout=30
-            ).read()
-            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".gpg")
-            try:
-                tmp.write(keyring_data)
-                tmp.flush()
-                tmp.close()
-                run(["cp", tmp.name, keyring_path])
-                run(["chmod", "go+r", keyring_path])
-            finally:
-                try:
-                    os.unlink(tmp.name)
-                except Exception:
-                    pass
-
-            run(["mkdir", "-p", "-m", "755", "/etc/apt/sources.list.d"])
-            source_line = (
-                "deb [arch={arch} signed-by={keyring}] "
-                "https://cli.github.com/packages stable main\n"
-            ).format(arch=arch, keyring=keyring_path)
-            run(["tee", sources_path], input=source_line)
-            run(["apt-get", "update", "-q"], timeout=120)
-
-            run(["apt-get", "install", "-y", "gh"], timeout=180)
-            return flask.jsonify({"success": True})
-
-        except subprocess.TimeoutExpired:
-            return flask.jsonify({"success": False, "stderr": "Installation timed out."})
-        except Exception as e:
-            self._logger.warning("gh install failed: %s", e)
-            return flask.jsonify({"success": False, "stderr": str(e)[:400]})
 
     def _api_start_auth_login(self):
         # Kill any lingering previous auth process.
@@ -519,7 +424,7 @@ __plugin_author__ = "Mauro Druwel"
 __plugin_author_email__ = "mauro.druwel@gmail.com"
 __plugin_url__ = "https://github.com/MauroDruwel/OctoPrint-Git-Backup"
 __plugin_license__ = "MIT"
-__plugin_pythoncompat__ = ">=3,<4"
+__plugin_pythoncompat__ = ">=3.7,<4"
 
 # GitHub App bot identity for commit attribution.
 _GIT_AUTHOR_NAME = "octoprint-backup[bot]"

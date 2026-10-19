@@ -12,7 +12,7 @@ authors = [
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {file = "LICENSE"}
 
-requires-python = ">=3.7, <4"
+requires-python = ">=3.7,<4"
 
 # any additional requirements (besides OctoPrint) should be listed here
 dependencies = []
@@ -34,5 +34,10 @@ Homepage = "https://github.com/MauroDruwel/OctoPrint-Git-Backup"
 
 [project.optional-dependencies]
 develop = [
-    "go-task-bin"
+    "go-task-bin",
+    "pytest",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

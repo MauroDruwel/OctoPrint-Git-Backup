@@ -17,7 +17,7 @@ Works with GitHub, GitLab, Gitea, Bitbucket, self-hosted, anything git can push 
 https://github.com/MauroDruwel/OctoPrint-Git-Backup/archive/main.zip
 ```
 
-**2. Get git authenticated**, on Raspberry Pi OS / Ubuntu / Debian, the plugin settings panel has one-click install buttons for `git` and the GitHub CLI, plus a guided `gh auth login` flow. On other platforms install git yourself and authenticate however you normally would (SSH key, OS credential manager, etc.).
+**2. Get git authenticated**: ensure `git` is installed on your system. For GitHub, you can use the guided `gh auth login` flow in the plugin settings panel, or configure git authentication at the OS level (SSH key, OS credential manager, etc.).
 
 **3. Paste your repo URL** in Settings → Git Backup Plugin and save.
 

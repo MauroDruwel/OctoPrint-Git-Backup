@@ -1,4 +1,5 @@
 *.pyc
+__pycache__/
 *.swp
 .idea
 *.iml
@@ -7,3 +8,4 @@ dist
 *.egg*
 .DS_Store
 *.zip
+.pytest_cache/
